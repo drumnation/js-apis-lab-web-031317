@@ -1,71 +1,82 @@
-var username = 'drumnation'
-var token = 'fc3a53d37d9cd474a86cc5c9b078ed5d62599dba'
+var baseUrl = 'https://api.github.com/'
 
-//define functions here
-var createGist = function(file_name, content, description, token) {
+function createGist(file_name, content, description, token){
+  var headerToken = 'token ' + token
+  var url = baseUrl + 'gists'
+  var file = {}
 
+  file[file_name] = { content: content }
+
+  var data = JSON.stringify({
+    files: file,
+    description: description,
+    public: true
+  })
 
   $.ajax({
-    url: 'https://api.github.com/gists/',
+    url: 'https://api.github.com/gists',
     type: 'POST',
     dataType: 'json',
-    headers: {
-      Authorization: token
-    }
-  })
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Authorization", "token " + token);
+    },
+    data: JSON.stringify(data)
+  }).done(function(response) {
+    myGists(response.owner.login, token);
+  });
 };
 
-// var myGists = function (username, token) {
-//   $.ajax({
-//     url: `https://api.github.com/users/drumnation/gists`,
-//     type: 'GET',
-//     dataType: 'json',
-//     headers: {
-//       Authorization: 'fc3a53d37d9cd474a86cc5c9b078ed5d62599dba'
-//     }
-//   })
-// };
-var myGists = function(event) {
-  event.preventDefault()
-  console.log("top of myGists")
+function myGists(username, token){
+  var headerToken = 'token ' + token
+  var url = baseUrl + 'users/' + username + '/gists'
   $.ajax({
-    url: `https://api.github.com/users/drumnation/gists`,
     type: 'GET',
-    dataType: 'json',
+    url: url,
     headers: {
-      Authorization: 'fc3a53d37d9cd474a86cc5c9b078ed5d62599dba'
+      Authorization: headerToken
     },
     success: function(data) {
-      debugger
-    }
-  })
-};
-var myCompareCommits = function() {
-  console.log("top of myGists")
-  $.ajax({
-    url: `https://api.github.com/repos/drumnation/javascript-lazy-loader-web-031317/compare/learn-co-students:master...drumnation:master`,
-    dataType: 'json',
-    headers: {
-      Authorization: 'fc3a53d37d9cd474a86cc5c9b078ed5d62599dba'
-    },
-    success: function(data) {
-      console.log('data')
+      return data
     }
   })
 };
 
-var showGists = function () {
-  let gists = myGists.map(function(gist, i, myGists) {
-    return `<div></div>`
+function bindCreateButton() {
+
+  $('#create-a-gist').on('submit', function(event) {
+    event.preventDefault()
+    var token = $('#personalToken').val()
+    var file_name = $('#file_name').val()
+    var description = $('#description').val()
+    var content = $('#content').val()
+
+    var gistPromise = createGist(file_name, content, description, token)
+
+    gistPromise.then(function(gists) {
+      for( var i = 0; i < gists.length; i++) {
+        $('#display-gists').append('<div class="gist"><h4><a href="' + gists[i].html_url + '" target="_blank">' + gists[i].description + '</a></h4></div>')
+      }
+    })
+  })
+};
+
+function bindShowButton() {
+  $('#show-gists').on('submit', function(event) {
+    event.preventDefault()
+    var token = $('#personalToken2').val()
+    var username = $('#username').val()
+
+    var myGistPromise = myGists(username, token)
+
+    myGistPromise.then(function(gists) {
+      for( var i = 0; i < gists.length; i++) {
+        $('#display-gists').append('<div class="gist"><h4><a href="' + gists[i].html_url + '" target="_blank">' + gists[i].description + '</a></h4></div>')
+      }
+    })
   })
 }
 
-var bindCreateButton = function() {
-  // call functions here
-
-};
-
 $(document).ready(function(){
-  $('input#create-gist').on('click', myGists )
-
+  bindCreateButton()
+  bindShowButton()
 });
